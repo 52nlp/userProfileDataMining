@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#-*- coding: utf-8 -*-
 #将最原始的数据进行分词 保存到train_data_fenci.txt
 #用词典做的，估计效率会比较低
 
@@ -8,15 +7,6 @@ import jieba.analyse
 import sys
 import logging
 
-'''# 该函数未被使用
-def cutWords(msg,stopWords):  
-    seg_list = jieba.cut(msg,cut_all=False)  
-    #key_list = jieba.analyse.extract_tags(msg,20) #get keywords   
-    leftWords = []   
-    for i in seg_list:  
-        if (i not in stopWords):  
-            leftWords.append(i)          
-    return leftWords  '''
 
 def cutWord(train_file,test_file):
     train_data = open(train_file,encoding='gb18030')

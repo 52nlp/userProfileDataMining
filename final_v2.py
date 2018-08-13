@@ -1,4 +1,3 @@
-# coding: utf-8
 import sys
 from time import time
 from sklearn import preprocessing, linear_model
@@ -29,7 +28,7 @@ def input_data(train_file,divide_number,end_number,tags):
             single_query_list = single_query.split(' ')
             # 去除 ID 字段
             single_query_list.pop(0)#id
-            # 标签不确定的情况下构建样本
+            # 标签确定的情况下构建样本
             if(single_query_list[tags]!='0'):
             	# 构建训练集样本的目标变量
                 train_tags.append(single_query_list[tags])
@@ -198,12 +197,11 @@ def optimize_single(tags):
     print('file:'+train_file)
     print('tags:%d   ' %tags )
     train_words, train_tags,test_words, test_tags = input_data(train_file,devide_number,end_number,tags)
-    train_data,test_data = tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
 
     pipeline = Pipeline([     
     #('TfidfVectorizer',TfidfVectorizer(sublinear_tf = True)),
     ('feature_selection',SelectKBest(chi2)),
-    ('clf',SGDClassifier()), 
+    ('clf',linear_model.SGDClassifier()), 
     ]);
 
     a=np.linspace(10000,200000,num=1000,dtype=int)
