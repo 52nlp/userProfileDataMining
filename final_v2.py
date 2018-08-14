@@ -69,7 +69,7 @@ def tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality):
     # 现在的问题是如何设置中文的停用词
     tv = TfidfVectorizer(sublinear_tf = True)
                                           
-    tfidf_train_2 = tv.fit_transform(train_words);  #得到矩阵
+    tfidf_train_2 = tv.fit_transform(train_words);
     tfidf_test_2 = tv.transform(test_words)
     print ("the shape of train is "+repr(tfidf_train_2.shape))  
     print ("the shape of test is "+repr(tfidf_test_2.shape))
@@ -192,36 +192,37 @@ def test_single(tags,n_dimensionality,n_topics):
 # 使用 GridSearch 找到最好的参数
 def optimize_single(tags):
     train_file = 'train_data_fenci.txt'
-    devide_number=15000
+    divide_number=15000
     end_number=17633
     print('file:'+train_file)
     print('tags:%d   ' %tags )
-    train_words, train_tags,test_words, test_tags = input_data(train_file,devide_number,end_number,tags)
+    train_words, train_tags,test_words, test_tags = input_data(train_file,divide_number,end_number,tags)
 
-    pipeline = Pipeline([     
-    #('TfidfVectorizer',TfidfVectorizer(sublinear_tf = True)),
+    tv = TfidfVectorizer(sublinear_tf = True)
+    tfidf_train = tv.fit_transform(train_words);
+
+    pipeline = Pipeline([
     ('feature_selection',SelectKBest(chi2)),
     ('clf',linear_model.SGDClassifier()), 
     ]);
 
-    a=np.linspace(10000,200000,num=1000,dtype=int)
+    a=np.linspace(100,2000,num=100,dtype=int)
    # min_df=np.linspace(0,0.01,num=1000,dtype=float)
 
     parameters={
     #'TfidfVectorizer__sublinear_tf':[True,False],
-   # 'TfidfVectorizer__min_df':list(min_df),
+    # 'TfidfVectorizer__min_df':list(min_df),
     #'TfidfVectorizer__sublinear_tf':[True,False],
-
-    #'feature_selection__score_func':[chi2],
-   'feature_selection__k':list(a)
+    # 'feature_selection__score_func':[chi2],
+    'feature_selection__k':list(a)
     }
-    grid_search = GridSearchCV(pipeline,parameters,n_jobs =6,verbose=1);  
+    grid_search = GridSearchCV(pipeline,param_grid=parameters,n_jobs =6,verbose=1);  
     print("Performing grid search...")  
     print("pipeline:", [name for name, _ in pipeline.steps])  
     print("parameters:")
     print(parameters)
   
-    grid_search.fit(train_words, train_tags)  
+    grid_search.fit(tfidf_train, train_tags)  
     print("Best score: %0.3f" % grid_search.best_score_)  
     print("Best parameters set:")
     best_parameters = grid_search.best_estimator_.get_params()
