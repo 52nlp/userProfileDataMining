@@ -179,9 +179,9 @@ def test_single(tags,n_dimensionality,n_topics):
     #将数据分为训练与测试，获取训练与测试数据的标签
     train_words, train_tags, test_words, test_tags = input_data(train_file,divide_number,end_number,tags)
     # 方法一：tv + 卡方选择，选择指定数量的最重要的那些特征，运行时间 1 小时左右
-    # train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
+    train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
  	# 方法二：tv + 卡方选择，tv + LDA，然后进行特征融合，运行时间一个半小时左右
-    train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
+    # train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
     
     test_tags_prediction=SVM_single(train_data,test_data,train_tags)
     #计算正确率
