@@ -4,8 +4,6 @@
 
 import jieba
 import jieba.analyse
-import sys
-import logging
 
 
 def cutWord(train_file,test_file):

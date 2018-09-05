@@ -137,6 +137,7 @@ def LDA(train_words,test_words,n_topics):
     # max_df 和 min_df 决定了忽略什么词语
     # max_df：如果是小数，那么表示的是百分比，当词语出现的文档超过这个百分比的时候，就忽略这个词语，它相当于是停用词；如果是整数，那么就表示具体的文档的数量
     # min_df：如果是小数，那么表示的是百分比，当词语出现的文档低于这个百分比的时候，就忽略这个词语；如果是整数，那么就表示具体的文档的数量
+    # 对预处理过后的数据做进一步的处理
     tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2)
     t0 = time()
     train_tf = tf_vectorizer.fit_transform(train_words)
@@ -179,9 +180,9 @@ def test_single(tags,n_dimensionality,n_topics):
     #将数据分为训练与测试，获取训练与测试数据的标签
     train_words, train_tags, test_words, test_tags = input_data(train_file,divide_number,end_number,tags)
     # 方法一：tv + 卡方选择，选择指定数量的最重要的那些特征，运行时间 1 小时左右
-    train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
+    # train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
  	# 方法二：tv + 卡方选择，tv + LDA，然后进行特征融合，运行时间一个半小时左右
-    # train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
+    train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
     
     test_tags_prediction=SVM_single(train_data,test_data,train_tags)
     #计算正确率
