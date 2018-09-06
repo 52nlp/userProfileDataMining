@@ -10,6 +10,12 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.feature_selection import SelectKBest, chi2
 import numpy as np
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Activation
+# from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
+from pathlib import Path
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 
 # 从整个训练集数据集中抽取部分数据作为训练模型的训练集数据和测试集数据，并且指定要使用的目标变量
@@ -51,11 +57,21 @@ def input_data(train_file,divide_number,end_number,tags):
                 single_query_list.pop(0)
                 single_query_list.pop(0)
                 test_words.append((str(single_query_list)).replace(',',' ').replace('\'','').lstrip('[').rstrip(']').replace('\\n',''))
-       # print(test_words)
-        #print(test_tags_age)
+
     print('input_data done!')
 
     # 返回构建的训练集输入，训练集目标变量，测试集输入，测试集目标变量
+    le = LabelEncoder()
+    train_tags = le.fit_transform(train_tags)
+    oe = OneHotEncoder()
+    train_tags = oe.fit_transform(train_tags.reshape(-1,1)).toarray()
+
+    le = LabelEncoder()
+    test_tags = le.fit_transform(test_tags)
+    oe = OneHotEncoder()
+    test_tags = oe.fit_transform(test_tags.reshape(-1,1)).toarray()
+
+
     return train_words, train_tags, test_words, test_tags
 
     
@@ -95,30 +111,61 @@ def feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_to
     return train_data,test_data
 
     
-# 使用支持向量机来进行分类
+# 使用简单的神经网络来进行分类
 # 先用训练集数据训练模型，然后对测试集数据进行预测
-def SVM_single(train_data,test_data,train_tags): 
-#SVM Classifier  
-    print ('******************************SVM*****************************' )
-    t0=time()
-    # 这里我们可以设置不同的 kernel，看看它们各自的效果
-    svclf = SVC(kernel = 'linear')#default with 'rbf'  
-    svclf.fit(train_data,train_tags)  
-    pred_tags = svclf.predict(test_data) 
-    print("done in %0.3fs." % (time() - t0))
-    print('clf done!')
-    return pred_tags
+def nn_single(train_data,test_data,train_tags, test_tags, tags): 
+    print ('******************************神经网络*****************************' )
+
+    if tags == 0:
+        classes = 6
+    elif tags == 1:
+        classes = 2
+    elif tags == 2:
+        classes = 6
+    else:
+        print('标签不合规！')
+        exit(0)
+
+    # train_tags = np_utils.to_categorical(train_tags, num_classes=classes)
+    # test_tags = np_utils.to_categorical(test_tags, num_classes=classes)
 
 
-# 使用 accuracy 来评估模型的性能，这里有多个类别，所以使用 accuracy 来评估模型的性能不是太好
-# 问题1：AUC、ROC、F1 这样的性能评估指标是否能应用到多分类的应用中？
-# 问题2：如果可以，那么怎么写代码来实现？（可以直接调用工具包）
-def evaluate_single(test_tags, test_tags_prediction):
-    actual=test_tags
-    pred=test_tags_prediction
-    print ('accuracy_score:{0:.3f}'.format(accuracy_score(actual, pred)))
-    print('confusion_matrix:')
-    print(confusion_matrix(actual, pred))
+    # 构建模型
+    model_path = 'nn_models/best_model_tags'+str(tags)+'.h5'
+    model_file = Path(model_path)
+    if  model_file.is_file():
+        print('loading model'.center(60, '*'))
+        model = load_model(model_path)
+        print('model loaded'.center(60, '*'))
+    else:
+        print('creating model'.center(60, '*'))
+        model = Sequential([
+            Dense(32, input_dim=np.shape(train_data)[1]),
+            Activation('relu'),
+            Dense(classes),
+            Activation('softmax')
+        ])
+        model.compile(
+            optimizer='adam', 
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+        print('model created'.center(60, '*'))
+
+    # 训练模型
+    model_dir = './nn_models'
+    filepath = model_dir + '/best_model_tags'+str(tags)+'.h5'
+    checkpoint = ModelCheckpoint(filepath,monitor='val_loss',save_best_only=True, verbose=1)
+    callbacks_list = [checkpoint]
+    train_result = model.fit(train_data, train_tags, 
+                    epochs=20, 
+                    batch_size=2048, 
+                    validation_split=0.11, 
+                    callbacks = callbacks_list,
+                    verbose=1)
+
+    # 预测
+    loss, accuracy = model.evaluate(test_data, test_tags)
+    return loss, accuracy
 
 
 # 使用 chi2 方法来选择 n_dimensionality 个最重要的特征
@@ -180,13 +227,13 @@ def test_single(tags,n_dimensionality,n_topics):
     #将数据分为训练与测试，获取训练与测试数据的标签
     train_words, train_tags, test_words, test_tags = input_data(train_file,divide_number,end_number,tags)
     # 方法一：tv + 卡方选择，选择指定数量的最重要的那些特征，运行时间 1 小时左右
-    # train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
+    train_data,test_data= tfidf_vectorize_1(train_words, train_tags, test_words, n_dimensionality)
  	# 方法二：tv + 卡方选择，tv + LDA，然后进行特征融合，运行时间一个半小时左右
-    train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
+    # train_data,test_data=feature_union_lda_tv(train_words,test_words,train_tags,n_dimensionality,n_topics)
     
-    test_tags_prediction=SVM_single(train_data,test_data,train_tags)
-    #计算正确率
-    evaluate_single(np.asarray(test_tags), test_tags_prediction)
+    loss, accuracy =nn_single(train_data,test_data,train_tags, test_tags, tags)
+    print("accuracy score: ", accuracy)
+    print("loss: ", loss)
 
 
 #########################################
