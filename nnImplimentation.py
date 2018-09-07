@@ -156,14 +156,11 @@ def nn_single(train_data,test_data,train_tags, test_tags, tags):
 
 
 # 分别对3个目标变量进行测试
-def test():
+def test(tag):
     # 0 对应 age
     # 1 对应 Gender
     # 2 对应 Education
-    # 我们分别以这三个标签作为我们的目标变量进行训练
-    test_single(0)
-    test_single(1)
-    test_single(2)
+    test_single(tag)
 
 
 # 对指定的目标变量（age，Gender，Education）进行测试
@@ -189,8 +186,8 @@ def test_single(tags):
 
 def main():
     # 如果第一个参数是 test，那么对3个目标变量分别进行测试，看看分类效果如何
-    if(sys.argv[1]=="test"):
-        test()
+    tag = int(sys.argv[1])
+    test(tag)
 
 if __name__ == '__main__':
     main()
