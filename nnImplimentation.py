@@ -61,6 +61,8 @@ def input_data(train_file,divide_number,end_number,tags):
     print('input_data done!')
 
     # 返回构建的训练集输入，训练集目标变量，测试集输入，测试集目标变量
+    # 将训练集数据和测试集数据的目标变量进行 onehot 编码
+    # 由于它们都是字符串，并且是从1开始的，所以要先用 LabelEncoder 进行处理。
     le = LabelEncoder()
     train_tags = le.fit_transform(train_tags)
     oe = OneHotEncoder()
@@ -113,8 +115,10 @@ def nn_single(train_data,test_data,train_tags, test_tags, tags):
 
 
     # 构建模型
+    # 模型存放路径
     model_path = 'nn_models/best_model_tags'+str(tags)+'.h5'
     model_file = Path(model_path)
+    # 检测是否有已经训练好的模型，如果有就加载继续训练，如果没有就创建新模型
     if  model_file.is_file():
         print('loading model'.center(60, '*'))
         model = load_model(model_path)
@@ -134,12 +138,11 @@ def nn_single(train_data,test_data,train_tags, test_tags, tags):
         print('model created'.center(60, '*'))
 
     # 训练模型
-    model_dir = './nn_models'
-    filepath = model_dir + '/best_model_tags'+str(tags)+'.h5'
-    checkpoint = ModelCheckpoint(filepath,monitor='val_loss',save_best_only=True, verbose=1)
+    # 创建回调函数
+    checkpoint = ModelCheckpoint(model_path,monitor='val_loss',save_best_only=True, verbose=1)
     callbacks_list = [checkpoint]
     train_result = model.fit(train_data, train_tags, 
-                    epochs=20, 
+                    epochs=10, 
                     batch_size=2048, 
                     validation_split=0.11, 
                     callbacks = callbacks_list,
